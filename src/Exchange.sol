@@ -64,9 +64,9 @@ contract Exchange is ERC20 {
     ) private pure returns (uint256) {
         if(inputReserve <= 0 || outputReserve <= 0) revert Exchange__InvalidReserve();
 
-        uint256 inputAmountWithFee = (inputAmount * FEE) / PRECISION;
+        uint256 inputAmountWithFee = inputAmount * FEE;
         uint256 numerator = inputAmountWithFee * outputReserve;
-        uint256 denominator = inputReserve + inputAmountWithFee;
+        uint256 denominator = (inputReserve * PRECISION) + inputAmountWithFee;
 
         return numerator / denominator;
     }
