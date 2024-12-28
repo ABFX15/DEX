@@ -13,6 +13,7 @@ contract ExchangeTest is Test {
     uint256 public constant ETH_AMOUNT = 1 ether;
     uint256 public constant TOKEN_AMOUNT = 100;
     uint256 public constant PRECISION = 1000;
+    uint256 public constant FEE = 999;
 
     function setUp() public {
         token = new Token("Test", "TEST", 1000);
@@ -21,15 +22,18 @@ contract ExchangeTest is Test {
 
     function testCanAddLiquidity() public {
         token.approve(address(exchange), TOKEN_AMOUNT);
-        exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
+        uint256 liquidityReceived = exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
+
         assertEq(token.balanceOf(address(exchange)), TOKEN_AMOUNT);
         assertEq(address(exchange).balance, ETH_AMOUNT);
+        assertEq(liquidityReceived, ETH_AMOUNT);
+        assertEq(exchange.balanceOf(address(this)), ETH_AMOUNT);
     }
 
     function testCanGetReserve() public {
         token.approve(address(exchange), TOKEN_AMOUNT);
         exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
-        
+
         assertEq(exchange.getReserve(), TOKEN_AMOUNT);
     }
 
@@ -45,18 +49,20 @@ contract ExchangeTest is Test {
     }
 
     function testCanGetTokenAmount() public {
-        token.approve(address(exchange), TOKEN_AMOUNT);
+        token.approve(address(exchange), TOKEN_AMOUNT * FEE);
         exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
-        
+
         uint256 tokensOut = exchange.getTokenAmount(ETH_AMOUNT);
-        assertEq(tokensOut, (ETH_AMOUNT * TOKEN_AMOUNT) / (ETH_AMOUNT + ETH_AMOUNT));
+        uint256 expectedOutput = (ETH_AMOUNT * FEE * TOKEN_AMOUNT) / (ETH_AMOUNT * PRECISION + ETH_AMOUNT * FEE);
+        assertEq(tokensOut, expectedOutput);
     }
 
     function testCanGetEthAmount() public {
-        token.approve(address(exchange), TOKEN_AMOUNT);
+        token.approve(address(exchange), TOKEN_AMOUNT * FEE);
         exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
-        
+
         uint256 ethOut = exchange.getEthAmount(TOKEN_AMOUNT);
-        assertEq(ethOut, (TOKEN_AMOUNT * ETH_AMOUNT) / (TOKEN_AMOUNT + TOKEN_AMOUNT));
+        uint256 expectedOutput = (TOKEN_AMOUNT * FEE * ETH_AMOUNT) / (TOKEN_AMOUNT * PRECISION + TOKEN_AMOUNT * FEE);
+        assertEq(ethOut, expectedOutput);
     }
 }

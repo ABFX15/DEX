@@ -19,12 +19,12 @@ contract Exchange is ERC20 {
     uint256 public constant FEE = 999;
 
     constructor(address _token) ERC20("SwapUni", "SWUNI") {
-        if(_token == address(0)) revert Exchange__InvalidTokenAddress();
+        if (_token == address(0)) revert Exchange__InvalidTokenAddress();
         i_tokenAddress = _token;
     }
 
-    function addLiquidity(uint256 _tokenAmount) public payable returns (uint256){
-        if(getReserve() == 0) {
+    function addLiquidity(uint256 _tokenAmount) public payable returns (uint256) {
+        if (getReserve() == 0) {
             IERC20 token = IERC20(i_tokenAddress);
             token.transferFrom(msg.sender, address(this), _tokenAmount);
             uint256 liquidity = address(this).balance;
@@ -34,7 +34,7 @@ contract Exchange is ERC20 {
             uint256 ethReserve = address(this).balance;
             uint256 tokenReserve = getReserve();
             uint256 tokenAmount = (msg.value * tokenReserve) / ethReserve;
-            if(_tokenAmount < tokenAmount) revert Exchange__InsufficientTokenAmount();
+            if (_tokenAmount < tokenAmount) revert Exchange__InsufficientTokenAmount();
 
             IERC20 token = IERC20(i_tokenAddress);
             token.transferFrom(msg.sender, address(this), tokenAmount);
@@ -49,20 +49,17 @@ contract Exchange is ERC20 {
         return IERC20(i_tokenAddress).balanceOf(address(this));
     }
 
-    function getPrice(
-        uint256 inputReserve, 
-        uint256 outputReserve
-    ) public pure returns (uint256) {
-        if(inputReserve <= 0 || outputReserve <= 0) revert Exchange__InvalidReserve();
+    function getPrice(uint256 inputReserve, uint256 outputReserve) public pure returns (uint256) {
+        if (inputReserve <= 0 || outputReserve <= 0) revert Exchange__InvalidReserve();
         return (inputReserve * PRECISION) / outputReserve;
     }
 
-    function getAmount(
-        uint256 inputAmount,
-        uint256 inputReserve,
-        uint256 outputReserve
-    ) private pure returns (uint256) {
-        if(inputReserve <= 0 || outputReserve <= 0) revert Exchange__InvalidReserve();
+    function getAmount(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve)
+        private
+        pure
+        returns (uint256)
+    {
+        if (inputReserve <= 0 || outputReserve <= 0) revert Exchange__InvalidReserve();
 
         uint256 inputAmountWithFee = inputAmount * FEE;
         uint256 numerator = inputAmountWithFee * outputReserve;
@@ -72,7 +69,7 @@ contract Exchange is ERC20 {
     }
 
     function getTokenAmount(uint256 _ethSold) public view returns (uint256) {
-        if(_ethSold <= 0) revert Exchange__ethSoldIsTooSmall();
+        if (_ethSold <= 0) revert Exchange__ethSoldIsTooSmall();
 
         uint256 tokenReserve = getReserve();
 
@@ -80,7 +77,7 @@ contract Exchange is ERC20 {
     }
 
     function getEthAmount(uint256 _tokenSold) public view returns (uint256) {
-        if(_tokenSold <= 0) revert Exchange__TokenSoldIsTooSmall();
+        if (_tokenSold <= 0) revert Exchange__TokenSoldIsTooSmall();
 
         uint256 tokenReserve = getReserve();
 
@@ -89,32 +86,24 @@ contract Exchange is ERC20 {
 
     function ethToTokenSwap(uint256 _minTokens) public payable {
         uint256 tokenReserve = getReserve();
-        uint256 tokensBought = getAmount(
-            msg.value,
-            address(this).balance - msg.value,
-            tokenReserve
-        );
+        uint256 tokensBought = getAmount(msg.value, address(this).balance - msg.value, tokenReserve);
 
-        if(tokensBought < _minTokens) revert Exchange__InsufficientOutputAmount();
+        if (tokensBought < _minTokens) revert Exchange__InsufficientOutputAmount();
 
         IERC20(i_tokenAddress).transfer(msg.sender, tokensBought);
     }
 
-    function tokenToEthSwap(uint256 _tokensSold,uint256 _minEth) public {
+    function tokenToEthSwap(uint256 _tokensSold, uint256 _minEth) public {
         uint256 tokenReserve = getReserve();
-        uint256 ethBought = getAmount(
-            _tokensSold,
-            tokenReserve,
-            address(this).balance
-        );
-        if(ethBought < _minEth) revert Exchange__InsufficientOutputAmount();
+        uint256 ethBought = getAmount(_tokensSold, tokenReserve, address(this).balance);
+        if (ethBought < _minEth) revert Exchange__InsufficientOutputAmount();
 
         IERC20(i_tokenAddress).transferFrom(msg.sender, address(this), _tokensSold);
         payable(msg.sender).transfer(ethBought);
     }
 
     function removeLiquidity(uint256 _amount) public returns (uint256, uint256) {
-        if(_amount <= 0) revert Exchange__InvalidAmount();
+        if (_amount <= 0) revert Exchange__InvalidAmount();
 
         uint256 ethAmount = (address(this).balance * _amount) / totalSupply();
         uint256 tokenAmount = (getReserve() * _amount) / totalSupply();
@@ -125,5 +114,4 @@ contract Exchange is ERC20 {
 
         return (ethAmount, tokenAmount);
     }
-
 }
