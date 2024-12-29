@@ -65,4 +65,18 @@ contract ExchangeTest is Test {
         uint256 expectedOutput = (TOKEN_AMOUNT * FEE * ETH_AMOUNT) / (TOKEN_AMOUNT * PRECISION + TOKEN_AMOUNT * FEE);
         assertEq(ethOut, expectedOutput);
     }
+
+    function testCanRemoveLiquidity() public {
+        token.approve(address(exchange), TOKEN_AMOUNT * FEE);
+        exchange.addLiquidity{value: ETH_AMOUNT}(TOKEN_AMOUNT);
+
+        uint256 liquidity = exchange.balanceOf(address(this));
+        (uint256 ethAmount, uint256 tokenAmount) = exchange.removeLiquidity(liquidity);
+
+        assertEq(token.balanceOf(address(this)), tokenAmount);
+        assertEq(address(this).balance, ethAmount);
+        assertEq(exchange.balanceOf(address(this)), 0);
+        assertEq(exchange.getReserve(), TOKEN_AMOUNT - tokenAmount);
+        assertEq(address(exchange).balance, ETH_AMOUNT - ethAmount);
+    }
 }
